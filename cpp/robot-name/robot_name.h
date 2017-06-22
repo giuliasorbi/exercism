@@ -3,56 +3,69 @@
 #include <iostream>
 #include <ctime>
 #include <list>
+#include <random>
 #include <boost/lexical_cast.hpp>
-#include "boost/random.hpp"
-//#include <boost/random/random_device.hpp>
-
-std::list<std::string> names; // robot names
-int seed = std::time(0);
-
 namespace robot_name {
+
+
+std::string generate_name()
+{
+    std::string chars("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    std::string n = "";
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    
+    for (auto i = 0; i < 2; i++) { // random character generation
+        std::uniform_int_distribution<> dist( 0, chars.size() - 1 );
+        n += chars[ dist(gen) ];
+    }
+
+    for (auto i = 0; i < 3; i++) { // random number generation
+        std::uniform_int_distribution<> dist(0, 9);
+        n += std::to_string ( dist(gen) );
+    }
+    return n;
+}
 
 class robot {
 public:
-    mutable std::string n = "";
+    robot();
     std::string name() const;
     void reset();
+
+    ~robot() {
+        name_list.remove(m_name); // robot name list
+    }; 
+
+private:
+    std::string m_name;
+    static std::list<std::string> name_list; 
 };
 
-std::string robot::name() const
+std::list<std::string> robot::name_list;
+
+robot::robot() 
 {
-    if (n == "") {
-        std::string chars("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-        auto it = names.begin();
-        //boost::random::random_device gen;
-        do {
-            boost::random::mt19937 gen(seed++);
-            //std::cout << "seed = " << seed << "\n";
+    auto it = name_list.end();
 
-            for (auto i = 0; i < 2; i++) { // random character generation
-                boost::random::uniform_int_distribution<> dist( 0, chars.size() - 1 );
-                n += chars[ dist(gen) ];
-            }
+    do {  
+        m_name = generate_name();
+        it = std::find(name_list.begin(), name_list.end(), m_name);
+    } while ( it != name_list.end() );
 
-            for (auto i = 0; i < 3; i++) { // random number generation
-                boost::random::uniform_int_distribution<> dist(0, 9);
-                n += boost::lexical_cast<std::string>( dist(gen) );
-            }
+    name_list.push_back(m_name);
+    //std::cout << "name = " << m_name << "\n";
+}
 
-            names.push_back(n);
-
-            it = std::find(names.begin(), names.end(), n);
-        } while (it == names.end());
-
-        names.push_back(n);
-        std::cout << "n = " << n << "\n";
-    }   
-    return n;
+std::string robot::name() const
+{ 
+    return m_name;
 }
 
 void robot::reset() 
 {
-     n = ""; 
+    name_list.remove(m_name);
+    m_name = generate_name();
 }
 
 }
